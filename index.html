@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardioPlus Health Dashboard</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f6f9; }
+        .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>สวัสดีคุณ: <span id="displayName">กำลังโหลด...</span></h2>
+        <p>User ID ของคุณคือ: <span id="userId" style="font-size: 12px; color: gray;">กำลังโหลด...</span></p>
+        <p><i>*เราจะใช้ User ID นี้ไปเทียบกับฐานข้อมูลคลินิก เพื่อดึงรายการยาและผลเลือดมาแสดง*</i></p>
+    </div>
+
+    <div class="card">
+        <h3>กราฟติดตามค่าน้ำตาล (FBS)</h3>
+        <canvas id="healthChart"></canvas>
+    </div>
+
+    <script>
+        // 1. นำ LIFF ID ที่ได้จากระบบมาใส่ตรงนี้
+        const myLiffId = "2009799465-T3kWCMPC";
+
+        // 2. ฟังก์ชันเริ่มต้นการทำงานของ LIFF
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: myLiffId });
+                
+                if (liff.isLoggedIn()) {
+                    getUserProfile();
+                } else {
+                    liff.login(); // บังคับล็อกอินถ้าเปิดผ่านเว็บเบราว์เซอร์ปกติ
+                }
+            } catch (err) {
+                console.error("LIFF Initialization failed", err);
+            }
+        }
+
+        // 3. ฟังก์ชันดึงข้อมูลโปรไฟล์ของคนไข้ที่กำลังเปิดดู
+        async function getUserProfile() {
+            const profile = await liff.getProfile();
+            document.getElementById("displayName").innerText = profile.displayName;
+            document.getElementById("userId").innerText = profile.userId;
+            
+            // เมื่อรู้ว่าใครคือคนไข้ ก็สั่งวาดกราฟ (ในของจริงตรงนี้ต้องไปดึงข้อมูลจาก Database ก่อน)
+            renderChart(); 
+        }
+
+        // 4. ฟังก์ชันวาดกราฟด้วย Chart.js
+        function renderChart() {
+            const ctx = document.getElementById('healthChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.'],
+                    datasets: [{
+                        label: 'FBS (mg/dL)',
+                        data: [145, 138, 126, 118, 110], // ตัวอย่างข้อมูลสมมติ
+                        borderColor: '#FF5733',
+                        backgroundColor: 'rgba(255, 87, 51, 0.2)',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                }
+            });
+        }
+
+        // เริ่มรันระบบเมื่อโหลดหน้าเว็บเสร็จ
+        initializeLiff();
+    </script>
+</body>
+</html>
