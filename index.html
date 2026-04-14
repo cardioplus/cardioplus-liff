@@ -6,73 +6,138 @@
     <title>CardioPlus Health Dashboard</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #f4f6f9; }
-        .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 20px; background-color: #f0f2f5; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .clinic-name { color: #0056b3; font-weight: bold; margin-bottom: 5px; }
+        .diagnosis-tag { background: #e7f3ff; color: #007bff; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-top: 10px; font-size: 0.9em; }
+        .loading { text-align: center; padding: 50px; color: #888; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>สวัสดีคุณ: <span id="displayName">กำลังโหลด...</span></h2>
-        <p>User ID ของคุณคือ: <span id="userId" style="font-size: 12px; color: gray;">กำลังโหลด...</span></p>
-        <p><i>*เราจะใช้ User ID นี้ไปเทียบกับฐานข้อมูลคลินิก เพื่อดึงรายการยาและผลเลือดมาแสดง*</i></p>
-    </div>
+    <div id="loadingScreen" class="loading">กำลังดึงข้อมูลสุขภาพของคุณ...</div>
 
-    <div class="card">
-        <h3>กราฟติดตามค่าน้ำตาล (FBS)</h3>
-        <canvas id="healthChart"></canvas>
+    <div id="mainContent" style="display: none;">
+        <div class="clinic-name">CardioPlus Clinic</div>
+        <div class="card">
+            <h2>สวัสดีคุณ <span id="displayName">...</span></h2>
+            <div id="diagnosisArea"></div>
+        </div>
+
+        <div class="card">
+            <h3>แนวโน้มค่าน้ำตาล (FBS)</h3>
+            <canvas id="healthChart"></canvas>
+        </div>
     </div>
 
     <script>
-        // 1. นำ LIFF ID ที่ได้จากระบบมาใส่ตรงนี้
-        const myLiffId = "2009799465-T3kWCMPC";
+        // --- [2009799465-T3kWCMPC] ---
+        const myLiffId = "ใส่_LIFF_ID_ตรงนี้";
 
-        // 2. ฟังก์ชันเริ่มต้นการทำงานของ LIFF
+        // --- [<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyC_uKO4Ab0LbD1DKgSzrPeuD6Yyo4Zfi4Y",
+    authDomain: "cardioplus-clinic-dashboard.firebaseapp.com",
+    projectId: "cardioplus-clinic-dashboard",
+    storageBucket: "cardioplus-clinic-dashboard.firebasestorage.app",
+    messagingSenderId: "355499956267",
+    appId: "1:355499956267:web:3ee78c5f2dd7899338326e",
+    measurementId: "G-1BWJJL4S59"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>] ---
+        const firebaseConfig = {
+            apiKey: "AIzaSy...",
+            authDomain: "...",
+            projectId: "...",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+
+        // เริ่มต้น Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         async function initializeLiff() {
             try {
                 await liff.init({ liffId: myLiffId });
-                
                 if (liff.isLoggedIn()) {
-                    getUserProfile();
+                    fetchData();
                 } else {
-                    liff.login(); // บังคับล็อกอินถ้าเปิดผ่านเว็บเบราว์เซอร์ปกติ
+                    liff.login();
                 }
             } catch (err) {
-                console.error("LIFF Initialization failed", err);
+                console.error("LIFF Init Error:", err);
             }
         }
 
-        // 3. ฟังก์ชันดึงข้อมูลโปรไฟล์ของคนไข้ที่กำลังเปิดดู
-        async function getUserProfile() {
+        async function fetchData() {
             const profile = await liff.getProfile();
             document.getElementById("displayName").innerText = profile.displayName;
-            document.getElementById("userId").innerText = profile.userId;
+
+            // ดึงข้อมูลจาก Firestore โดยใช้ User ID ของ LINE เป็นกุญแจ
+            // (ในขั้นตอนนี้ ถ้าคุณหมอใช้รหัส U12345 ใน Firestore ให้เปลี่ยน profile.userId เป็น "U12345" เพื่อทดสอบก่อนได้ครับ)
+            const docRef = db.collection("patients").doc(profile.userId);
             
-            // เมื่อรู้ว่าใครคือคนไข้ ก็สั่งวาดกราฟ (ในของจริงตรงนี้ต้องไปดึงข้อมูลจาก Database ก่อน)
-            renderChart(); 
+            docRef.get().then((doc) => {
+                document.getElementById("loadingScreen").style.display = "none";
+                document.getElementById("mainContent").style.display = "block";
+
+                if (doc.exists) {
+                    const data = doc.data();
+                    
+                    // แสดง Diagnosis
+                    if(data.diagnosis) {
+                        document.getElementById("diagnosisArea").innerHTML = `<div class="diagnosis-tag">การวินิจฉัย: ${data.diagnosis}</div>`;
+                    }
+
+                    // พล็อตกราฟ
+                    renderChart(data.fbs_dates, data.fbs_history);
+                } else {
+                    document.getElementById("diagnosisArea").innerHTML = "<p>ยังไม่มีข้อมูลประวัติในระบบ</p>";
+                }
+            }).catch((error) => {
+                console.log("Error getting document:", error);
+            });
         }
 
-        // 4. ฟังก์ชันวาดกราฟด้วย Chart.js
-        function renderChart() {
+        function renderChart(labels, dataValues) {
             const ctx = document.getElementById('healthChart').getContext('2d');
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.'],
+                    labels: labels,
                     datasets: [{
                         label: 'FBS (mg/dL)',
-                        data: [145, 138, 126, 118, 110], // ตัวอย่างข้อมูลสมมติ
-                        borderColor: '#FF5733',
-                        backgroundColor: 'rgba(255, 87, 51, 0.2)',
-                        borderWidth: 2,
+                        data: dataValues,
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        tension: 0.3,
                         fill: true
                     }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: false } }
                 }
             });
         }
 
-        // เริ่มรันระบบเมื่อโหลดหน้าเว็บเสร็จ
         initializeLiff();
     </script>
 </body>
