@@ -35,39 +35,17 @@
     </div>
 
     <script>
-        // --- [2009799465-T3kWCMPC] ---
+        // 1. LIFF ID ของคุณหมอ
         const myLiffId = "2009799465-T3kWCMPC";
 
-        // --- [<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyC_uKO4Ab0LbD1DKgSzrPeuD6Yyo4Zfi4Y",
-    authDomain: "cardioplus-clinic-dashboard.firebaseapp.com",
-    projectId: "cardioplus-clinic-dashboard",
-    storageBucket: "cardioplus-clinic-dashboard.firebasestorage.app",
-    messagingSenderId: "355499956267",
-    appId: "1:355499956267:web:3ee78c5f2dd7899338326e",
-    measurementId: "G-1BWJJL4S59"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>] ---
+        // 2. Firebase Config ของจริง (จัดเรียงโค้ดใหม่ให้ถูกต้อง)
         const firebaseConfig = {
-            apiKey: "AIzaSy...",
-            authDomain: "...",
-            projectId: "...",
-            storageBucket: "...",
-            messagingSenderId: "...",
-            appId: "..."
+            apiKey: "AIzaSyC_uKO4Ab0LbD1DKgSzrPeuD6Yyo4Zfi4Y",
+            authDomain: "cardioplus-clinic-dashboard.firebaseapp.com",
+            projectId: "cardioplus-clinic-dashboard",
+            storageBucket: "cardioplus-clinic-dashboard.firebasestorage.app",
+            messagingSenderId: "355499956267",
+            appId: "1:355499956267:web:3ee78c5f2dd7899338326e"
         };
 
         // เริ่มต้น Firebase
@@ -92,7 +70,6 @@
             document.getElementById("displayName").innerText = profile.displayName;
 
             // ดึงข้อมูลจาก Firestore โดยใช้ User ID ของ LINE เป็นกุญแจ
-            // (ในขั้นตอนนี้ ถ้าคุณหมอใช้รหัส U12345 ใน Firestore ให้เปลี่ยน profile.userId เป็น "U12345" เพื่อทดสอบก่อนได้ครับ)
             const docRef = db.collection("patients").doc(profile.userId);
             
             docRef.get().then((doc) => {
